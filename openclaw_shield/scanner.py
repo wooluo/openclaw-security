@@ -13,9 +13,7 @@ from loguru import logger
 
 from .advanced_threats import AdvancedThreatDetector
 from .updater import AutoUpdater
-
-
- from .config import Config
+from .config import Config
 
 
 class SkillScanner:
