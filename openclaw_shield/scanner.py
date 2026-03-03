@@ -106,7 +106,7 @@ class SkillScanner:
     def __init__(self, config: Config):
         """Initialize the scanner with configuration."""
         self.config = config
-        self.advanced_detector = AdvancedThreatDetector()
+        self.advanced_detector = AdvancedThreatDetector(config)
         self.updater = AutoUpdater(config)
         self.results = {}
 
@@ -283,21 +283,10 @@ class SkillScanner:
 
     def _advanced_analysis(self, content: str, file_path: str, results: Dict):
         """Perform advanced threat analysis."""
-        # Run advanced threat detection
-        advanced_threats = self.advanced_detector.detect_all_threats(content, file_path)
+        # Run advanced threat detection using the analyze method
+        static_results = {}
+        advanced_threats = self.advanced_detector.analyze(file_path, content, static_results)
         results['threats'].extend(advanced_threats)
-
-        # Check for hidden payloads
-        hidden_threats = self.advanced_detector.detect_hidden_payloads(content)
-        results['threats'].extend(hidden_threats)
-
-        # Check for suspicious strings
-        string_threats = self.advanced_detector.detect_suspicious_strings(content)
-        results['threats'].extend(string_threats)
-
-        # Check for crypto operations
-        crypto_threats = self.advanced_detector.detect_crypto_operations(content)
-        results['threats'].extend(crypto_threats)
 
     def _scan_dependency_file(self, file_path: str, content: str, results: Dict):
         """Scan dependency files for supply chain attacks."""

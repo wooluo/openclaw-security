@@ -338,6 +338,7 @@ class AdvancedThreatDetector:
                 self._compiled[category] = patterns
 
         logger.info(f"Compiled {len(self._compiled)} advanced threat patterns")
+        return self._compiled
 
     def analyze(self, file_path: str, content: str, static_results: Dict) -> List[Dict]:
         """
@@ -358,7 +359,7 @@ class AdvancedThreatDetector:
             category_info = self.ADVANCED_PATTERNS[category]
             for compiled_pattern, original_pattern in patterns:
                 matches = compiled_pattern.finditer(content)
- if matches:
+                if matches:
                     for match in matches:
                         line_num = content[:match.start()].count('\n') + 1
                         threat = {
@@ -479,14 +480,14 @@ class AdvancedThreatDetector:
 
         # Check for suspicious variable names
         suspicious_vars = [
-            r'\b(password|passwd|pwd|secret|key|token|auth|cred)[wd]*)\b',
+            r'\b(password|passwd|pwd|secret|key|token|auth|cred)[\w]*\b',
             r'\b(shell|backdoor|exploit|payload|malware|virus)\b',
             r'\b(admin|root|superuser|sudo)\b',
             r'\b(attack|hack|crack|pirate)\b',
         ]
 
         lines = content.split('\n')
-        for i, range(len(lines)):
+        for i in range(len(lines)):
             line = lines[i]
             for pattern in suspicious_vars:
                 if re.search(pattern, line, re.IGNORECASE):
@@ -558,7 +559,7 @@ class AdvancedThreatDetector:
                 ]
 
                 for dep in pkg.get('dependencies', {}).keys():
-                    if any(sus for dep.lower() for sus in suspicious_packages):
+                    if any(sus in dep.lower() for sus in suspicious_packages):
                         threats.append({
                             'type': 'suspicious_dependency',
                             'severity': 'HIGH',

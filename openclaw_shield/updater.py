@@ -8,6 +8,7 @@ import json
 import hashlib
 import asyncio
 import aiohttp
+import shutil
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 from datetime import datetime, timedelta
@@ -18,7 +19,7 @@ import requests
 
 class AutoUpdater:
     """
-    Automatically updates threat detection rules, signatures, and and the software itself.
+    Automatically updates threat detection rules, signatures, and the software itself.
     Supports rollback, incremental updates, and verification.
     """
 
@@ -37,7 +38,7 @@ class AutoUpdater:
     }
 
     # Threat intelligence feeds (optional)
-    'threat_intel': {
+    threat_intel = {
         'otx_url': 'https://otx.alienvault.com/api/v1/indicators/hostname/',
         # Add your OTX API key in config
     }
@@ -60,7 +61,7 @@ class AutoUpdater:
         except ImportError:
             return "1.0.0"
 
-    def _load_update_history(self) Dict:
+    def _load_update_history(self) -> Dict:
         """Load update history from file."""
         history_file = self._update_dir / 'update_history.json'
         if history_file.exists():
@@ -105,15 +106,15 @@ class AutoUpdater:
                     headers=headers
                 ) as response:
                     if response.status == 200:
-                    data = await response.json()
-                    latest_version = data.get('tag_name', 'v1.0.0')
-                    updates['software_update'] = {
-                        'available': latest_version != self._current_version,
-                        'current': self._current_version,
-                        'latest': latest_version,
-                        'download_url': data.get('html_url'),
-                        'release_notes': data.get('body', '')
-                    }
+                        data = await response.json()
+                        latest_version = data.get('tag_name', 'v1.0.0')
+                        updates['software_update'] = {
+                            'available': latest_version != self._current_version,
+                            'current': self._current_version,
+                            'latest': latest_version,
+                            'download_url': data.get('html_url'),
+                            'release_notes': data.get('body', '')
+                        }
         except Exception as e:
             logger.warning(f"Failed to check for software updates: {e}")
 
@@ -134,11 +135,10 @@ class AutoUpdater:
         local_rules_file = Path(self.config.get('threat_detection.rules_file',
                                      './config/threat_rules.yaml'))
         local_hash = None
-
         local_modified = None
 
         if local_rules_file.exists():
-            local_modified = datetime.fromtimestamp(local_rules_file.stat_mtime())
+            local_modified = datetime.fromtimestamp(local_rules_file.stat().st_mtime)
             with open(local_rules_file, 'rb') as f:
                 local_hash = hashlib.sha256(f.read()).hexdigest()
 
@@ -151,22 +151,22 @@ class AutoUpdater:
                 async with aiohttp.ClientSession() as session:
                     async with session.get(source['rules_url']) as response:
                         if response.status == 200:
-                        content = await response.text()
-                        remote_hash = hashlib.sha256(content.encode()).hexdigest()
+                            content = await response.text()
+                            remote_hash = hashlib.sha256(content.encode()).hexdigest()
 
-                        # Check if update is available
-                        if remote_hash != local_hash:
-                            return {
-                                'available': True,
-                                'local_hash': local_hash,
-                                'remote_hash': remote_hash,
-                                'local_modified': local_modified.isoformat() if local_modified else None,
-                                'source': source_name,
-                                'size': len(content)
-                            }
-                        else:
-                            logger.debug(f"Rules up to date (source: {source_name})")
-                            return None
+                            # Check if update is available
+                            if remote_hash != local_hash:
+                                return {
+                                    'available': True,
+                                    'local_hash': local_hash,
+                                    'remote_hash': remote_hash,
+                                    'local_modified': local_modified.isoformat() if local_modified else None,
+                                    'source': source_name,
+                                    'size': len(content)
+                                }
+                            else:
+                                logger.debug(f"Rules up to date (source: {source_name})")
+                                return None
             except Exception as e:
                 logger.warning(f"Failed to check rules from {source_name}: {e}")
                 continue
@@ -181,7 +181,7 @@ class AutoUpdater:
         local_modified = None
 
         if local_blacklist_file.exists():
-            local_modified = datetime.fromtimestamp(local_blacklist_file.stat_mtime())
+            local_modified = datetime.fromtimestamp(local_blacklist_file.stat().st_mtime)
             with open(local_blacklist_file, 'rb') as f:
                 local_hash = hashlib.sha256(f.read()).hexdigest()
 
@@ -275,7 +275,6 @@ class AutoUpdater:
         try:
             # Create backup
             if local_rules_file.exists():
-                import shutil
                 shutil.copy(local_rules_file, backup_file)
                 logger.info(f"Created backup: {backup_file}")
 
@@ -284,26 +283,26 @@ class AutoUpdater:
             async with aiohttp.ClientSession() as session:
                 async with session.get(source['rules_url']) as response:
                     if response.status == 200:
-                    content = await response.text()
+                        content = await response.text()
 
-                    # Validate YAML before applying
-                    try:
-                        yaml.safe_load(content)
-                    except yaml.YAMLError as e:
-                        raise ValueError(f"Invalid YAML in update: {e}")
+                        # Validate YAML before applying
+                        try:
+                            yaml.safe_load(content)
+                        except yaml.YAMLError as e:
+                            raise ValueError(f"Invalid YAML in update: {e}")
 
-                    # Apply update
-                    with open(local_rules_file, 'w') as f:
-                        f.write(content)
+                        # Apply update
+                        with open(local_rules_file, 'w') as f:
+                            f.write(content)
 
-                    logger.info("Threat rules updated successfully")
+                        logger.info("Threat rules updated successfully")
 
-                    return {
-                        'status': 'success',
-                        'message': 'Threat rules updated successfully',
-                        'backup': str(backup_file),
-                        'rollback_available': True
-                    }
+                        return {
+                            'status': 'success',
+                            'message': 'Threat rules updated successfully',
+                            'backup': str(backup_file),
+                            'rollback_available': True
+                        }
 
         except Exception as e:
             logger.error(f"Failed to apply rules update: {e}")
@@ -331,7 +330,6 @@ class AutoUpdater:
         try:
             # Create backup
             if local_blacklist_file.exists():
-                import shutil
                 shutil.copy(local_blacklist_file, backup_file)
                 logger.info(f"Created backup: {backup_file}")
 
@@ -340,19 +338,19 @@ class AutoUpdater:
             async with aiohttp.ClientSession() as session:
                 async with session.get(source['blacklist_url']) as response:
                     if response.status == 200:
-                    content = await response.text()
+                        content = await response.text()
 
-                    # Apply update
-                    with open(local_blacklist_file, 'w') as f:
-                        f.write(content)
-                    logger.info(f"Blacklist updated successfully ({update_info['entries']} entries)")
+                        # Apply update
+                        with open(local_blacklist_file, 'w') as f:
+                            f.write(content)
+                        logger.info(f"Blacklist updated successfully ({update_info['entries']} entries)")
 
-                    return {
-                        'status': 'success',
-                        'message': f"Blacklist updated: {update_info['entries']} entries",
-                        'backup': str(backup_file),
-                        'rollback_available': True,
-                    }
+                        return {
+                            'status': 'success',
+                            'message': f"Blacklist updated: {update_info['entries']} entries",
+                            'backup': str(backup_file),
+                            'rollback_available': True,
+                        }
         except Exception as e:
             logger.error(f"Failed to apply blacklist update: {e}")
             # Attempt rollback
@@ -367,6 +365,7 @@ class AutoUpdater:
                 'message': str(e),
                 'rollback_attempted': backup_file.exists()
             }
+
     def _record_update(self, results: Dict):
         """Record update in history."""
         update_record = {
@@ -388,7 +387,7 @@ class AutoUpdater:
         logger.info(f"Attempting rollback for {update_type}...")
 
         # Find the most recent backup
-        pattern = f'{update_type}_backup_*.{"yaml" if update_type == "rules" else ".txt"}'
+        pattern = f'{update_type}_backup_*.{"yaml" if update_type == "rules" else "txt"}'
         backups = list(self._update_dir.glob(pattern))
 
         if not backups:
@@ -396,7 +395,7 @@ class AutoUpdater:
             return False
 
         # Get most recent backup
-        latest_backup = max(backups, key=lambda p: p.stat_mtime)
+        latest_backup = max(backups, key=lambda p: p.stat().st_mtime)
 
         # Determine target file
         if update_type == 'rules':
@@ -417,8 +416,7 @@ class AutoUpdater:
             logger.error(f"Rollback failed: {e}")
             return False
 
-    async def schedule_automatic_updates(self, interval_hours: int = 24):
- bool:
+    async def schedule_automatic_updates(self, interval_hours: int = 24) -> bool:
         """
         Schedule automatic update checks.
 
@@ -434,8 +432,8 @@ class AutoUpdater:
                                                       updates.get('blacklist_update')]):
                     results = await self.apply_updates(updates, auto_confirm=True)
                     logger.info(f"Automatic update completed: {results}")
-            else:
-                logger.debug("No updates available")
+                else:
+                    logger.debug("No updates available")
             except asyncio.CancelledError:
                 logger.info("Automatic update scheduler stopped")
                 break
