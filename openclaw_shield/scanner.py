@@ -1,5 +1,6 @@
 """
 Skill Scanner Module
+Enhanced with advanced threat detection capabilities
 Performs static analysis and security scanning of OpenClaw skills
 """
 
@@ -10,11 +11,17 @@ from pathlib import Path
 from typing import Dict, List, Any, Optional
 from loguru import logger
 
+from .advanced_threats import AdvancedThreatDetector
+from .updater import AutoUpdater
+
+
+ from .config import Config
+
 
 class SkillScanner:
     """
     Scans OpenClaw skills for security threats using static analysis.
-    Detects malicious patterns, dangerous functions, and suspicious behavior.
+    Includes advanced threat detection for supply chain attacks, obfuscation, and etc.
     """
 
     # Dangerous Python functions that should be flagged
@@ -92,11 +99,17 @@ class SkillScanner:
         (r'base64\.b64decode', 'MEDIUM', 'base64_decoding'),
         (r'__import__\s*\(', 'HIGH', 'dynamic_import'),
         (r'getattr\s*\(\s*[^,]+,\s*[^)]*\+', 'MEDIUM', 'dynamic_attribute_access'),
+
+        # Hidden payloads
+        (r'\\x[0-9a-fA-F]{2}', 'HIGH', 'hex_encoding'),
+        (r'\\u[0-9a-fA-F]{4}', 'HIGH', 'unicode_escape'),
     ]
 
-    def __init__(self, config):
+    def __init__(self, config: Config):
         """Initialize the scanner with configuration."""
         self.config = config
+        self.advanced_detector = AdvancedThreatDetector()
+        self.updater = AutoUpdater(config)
         self.results = {}
 
     def scan_file(self, file_path: str) -> Dict[str, Any]:
@@ -143,6 +156,13 @@ class SkillScanner:
 
         # Pattern matching
         self._pattern_analysis(content, results)
+
+        # Advanced threat detection
+        self._advanced_analysis(content, file_path, results)
+
+        # Check for dependency file attacks
+        if 'package.json' in file_path or 'requirements.txt' in file_path:
+            self._scan_dependency_file(file_path, content, results)
 
         # Calculate final score
         results['score'] = self._calculate_score(results)
@@ -231,6 +251,24 @@ class SkillScanner:
                 'line': self._find_line_number(content, 'fetch')
             })
 
+        # Check for prototype pollution
+        if re.search(r'__proto__|prototype\s*\[', content):
+            self._add_threat(results, {
+                'type': 'prototype_pollution',
+                'severity': 'HIGH',
+                'message': "Prototype pollution pattern detected",
+                'line': self._find_line_number(content, '__proto__')
+            })
+
+        # Check for DOM-based XSS
+        if re.search(r'innerHTML|outerHTML|document\.write', content):
+            self._add_threat(results, {
+                'type': 'dom_xss',
+                'severity': 'HIGH',
+                'message': "DOM-based XSS risk detected",
+                'line': self._find_line_number(content, 'innerHTML')
+            })
+
     def _pattern_analysis(self, content: str, results: Dict):
         """Perform pattern-based analysis."""
         for pattern, severity, threat_type in self.MALICIOUS_PATTERNS:
@@ -244,6 +282,29 @@ class SkillScanner:
                     'line': line_num,
                     'match': match.group(0)[:100]
                 })
+
+    def _advanced_analysis(self, content: str, file_path: str, results: Dict):
+        """Perform advanced threat analysis."""
+        # Run advanced threat detection
+        advanced_threats = self.advanced_detector.detect_all_threats(content, file_path)
+        results['threats'].extend(advanced_threats)
+
+        # Check for hidden payloads
+        hidden_threats = self.advanced_detector.detect_hidden_payloads(content)
+        results['threats'].extend(hidden_threats)
+
+        # Check for suspicious strings
+        string_threats = self.advanced_detector.detect_suspicious_strings(content)
+        results['threats'].extend(string_threats)
+
+        # Check for crypto operations
+        crypto_threats = self.advanced_detector.detect_crypto_operations(content)
+        results['threats'].extend(crypto_threats)
+
+    def _scan_dependency_file(self, file_path: str, content: str, results: Dict):
+        """Scan dependency files for supply chain attacks."""
+        dep_threats = self.advanced_detector.scan_dependency_file(file_path, content)
+        results['threats'].extend(dep_threats)
 
     def _check_dangerous_import(self, module: str, results: Dict):
         """Check if an import is dangerous."""

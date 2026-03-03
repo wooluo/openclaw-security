@@ -301,6 +301,177 @@ def resolve(threat_id):
     console.print(f"[green]✓ Threat {threat_id} marked as resolved[/green]")
 
 
+@cli.group()
+def update():
+    """Update threat detection rules and signatures."""
+    pass
+
+
+@update.command()
+@click.option('--auto-confirm', is_flag=True, help='Automatically confirm updates')
+@click.option('--source', '-s', type=click.Choice(['official', 'github', 'local']),
+              default='official', help='Update source')
+def rules(auto_confirm, source):
+    """Update threat detection rules."""
+    from .updater import AutoUpdater
+
+    console.print(Panel.fit(
+        "[bold cyan]Threat Rules Update[/bold cyan]",
+        border_style="cyan"
+    ))
+
+    config = Config()
+    updater = AutoUpdater(config)
+
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        console=console,
+    ) as progress:
+        task = progress.add_task("Checking for updates...", total=None)
+        import asyncio
+        results = asyncio.run(updater.check_for_updates())
+
+    if not any(u.get('available', False) for u in [results.get('rules_update'),
+                                                    results.get('blacklist_update'),
+                                                    results.get('software_update')]):
+        console.print("[green]✓ All rules are up to date[/green]")
+        return
+
+    # Show available updates
+    if results.get('rules_update', {}).get('available'):
+        update_info = results['rules_update']
+        console.print(f"\n[yellow]Rules update available:[/yellow]")
+        console.print(f"  Current version: {update_info.get('current', 'unknown')}")
+        console.print(f"  Latest version: {update_info.get('latest', 'unknown')}")
+
+    if results.get('blacklist_update', {}).get('available'):
+        update_info = results['blacklist_update']
+        console.print(f"\n[yellow]Blacklist update available:[/yellow]")
+        console.print(f"  Entries: {update_info.get('entries', 'unknown')}")
+
+    # Apply updates
+    if auto_confirm:
+        console.print("\n[cyan]Auto-confirming updates...[/cyan]")
+    else:
+        if not click.confirm("\nApply these updates?", default=False):
+            console.print("[yellow]Update cancelled[/yellow]")
+            return
+
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        console=console,
+    ) as progress:
+        task = progress.add_task("Applying updates...", total=None)
+        import asyncio
+        update_results = asyncio.run(updater.apply_updates(results, auto_confirm=True))
+
+    # Show results
+    for update_type, result in update_results.items():
+        if result.get('status') == 'success':
+            console.print(f"[green]✓ {update_type.title()} updated successfully[/green]")
+        elif result.get('status') == 'failed':
+            console.print(f"[red]✗ {update_type.title()} update failed: {result.get('message')}[/red]")
+        else:
+            console.print(f"[yellow]⊘ {update_type.title()}: {result.get('message')}[/yellow]")
+
+
+@update.command()
+@click.argument('update_type', type=click.Choice(['rules', 'blacklist']))
+def rollback(update_type):
+    """Rollback the last update of a specific type."""
+    from .updater import AutoUpdater
+
+    config = Config()
+    updater = AutoUpdater(config)
+
+    console.print(f"[cyan]Rolling back {update_type}...[/cyan]")
+
+    success = updater.rollback_last_update(update_type)
+
+    if success:
+        console.print(f"[green]✓ Successfully rolled back {update_type}[/green]")
+    else:
+        console.print(f"[red]✗ Failed to rollback {update_type}[/red]")
+
+
+@update.command()
+def status():
+    """Show update status and history."""
+    from .updater import AutoUpdater
+
+    config = Config()
+    updater = AutoUpdater(config)
+
+    status_info = updater.get_update_status()
+
+    console.print(Panel.fit(
+        "[bold cyan]Update Status[/bold cyan]",
+        border_style="cyan"
+    ))
+
+    table = Table()
+    table.add_column("Property", style="cyan")
+    table.add_column("Value", style="green")
+
+    table.add_row("Current Version", status_info.get('current_version', 'unknown'))
+    table.add_row("Last Update", status_info.get('last_update', 'Never'))
+    table.add_row("Update History Count", str(status_info.get('update_history_count', 0)))
+    table.add_row("Cached Updates", str(status_info.get('cached_updates', 0)))
+
+    console.print(table)
+
+
+@update.command()
+@click.option('--hours', '-h', default=24, help='Hours between automatic updates')
+@click.option('--daemon', '-d', is_flag=True, help='Run as daemon')
+def schedule(hours, daemon):
+    """Schedule automatic updates."""
+    from .updater import AutoUpdater
+
+    config = Config()
+    updater = AutoUpdater(config)
+
+    if daemon:
+        console.print(f"[cyan]Starting automatic update scheduler (every {hours} hours)...[/cyan]")
+        console.print("[dim]Press Ctrl+C to stop[/dim]\n")
+
+        try:
+            import asyncio
+            asyncio.run(updater.schedule_automatic_updates(hours))
+        except KeyboardInterrupt:
+            console.print("\n[yellow]Scheduler stopped[/yellow]")
+    else:
+        console.print(f"[green]Scheduled automatic updates every {hours} hours[/green]")
+        console.print("[dim]Use --daemon flag to start the scheduler[/dim]")
+
+
+@cli.command()
+def version():
+    """Show version and update information."""
+    console.print(Panel.fit(
+        "[bold cyan]OpenClaw Security Shield[/bold cyan]\n"
+        "[dim]Version 1.0.0[/dim]",
+        border_style="cyan"
+    ))
+
+    # Check for updates
+    from .updater import AutoUpdater
+
+    config = Config()
+    updater = AutoUpdater(config)
+
+    import asyncio
+    updates = asyncio.run(updater.check_for_updates())
+
+    if updates.get('software_update', {}).get('available'):
+        console.print(f"[yellow]⚠ Update available: {updates['software_update']['latest']}[/yellow]")
+        console.print(f"[dim]Run 'openclaw-shield update rules' to update[/dim]")
+    else:
+        console.print("[green]✓ Running latest version[/green]")
+
+
 def _display_scan_result(result, verbose=False):
     """Display scan result for a single file."""
     risk_level = result.get('risk_level', 'UNKNOWN')
