@@ -198,7 +198,7 @@ threat_detection:
 ## 📮 联系方式
 
 - 问题反馈: [GitHub Issues](https://github.com/wooluo/openclaw-SEC/issues)
-- 安全漏洞: security@example.com
+- 安全漏洞: wooluo@gmail.com
 
 ---
 
