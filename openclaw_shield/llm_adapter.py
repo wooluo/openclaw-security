@@ -7,7 +7,7 @@ Supports OpenAI, Anthropic, Google Gemini, Azure OpenAI, AWS Bedrock, and more.
 import json
 import time
 from datetime import datetime
-from typing import Dict, List, Optional, Any, Union, Callable
+from typing import Dict, List, Optional, Any, Union, Callable, Tuple
 from dataclasses import dataclass, field, asdict
 from enum import Enum
 from loguru import logger

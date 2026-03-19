@@ -42,6 +42,7 @@ class AssetRiskLevel(Enum):
     MEDIUM = "medium"
     LOW = "low"
     SAFE = "safe"
+    UNKNOWN = "unknown"
 
 
 @dataclass

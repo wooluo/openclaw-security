@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "openclaw-shield"
-version = "1.1.0"
+version = "1.6.0"
 description = "OpenClaw Security Shield - Comprehensive security protection system for AI agents"
 readme = "README.md"
 license = {text = "MIT"}

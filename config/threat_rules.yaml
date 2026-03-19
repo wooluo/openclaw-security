@@ -1199,3 +1199,240 @@ rules:
       - type: string
         value: query
     remediation: "Validate and deduplicate all parameters"
+
+  # ========================================
+  # Additional 2026 CVE-Based Rules (Round 4)
+  # ========================================
+
+  # CVE-2026-25593: Unauthenticated local RCE via config.apply
+  - id: cve_2026_25593_config_rce
+    type: config_rce
+    severity: CRITICAL
+    cve: "CVE-2026-25593"
+    message: "Unauthenticated local RCE via config.apply detected"
+    conditions:
+      - type: pattern
+        value: config\.apply|config\.set|gateway.*config
+      - type: string
+        value: cliPath
+      - type: string
+        value: config
+      - type: pattern
+        value: websocket|ws://|WebSocket
+    remediation: "Validate all config values, never trust cliPath from WebSocket"
+    references:
+      - "https://nvd.nist.gov/vuln/detail/CVE-2026-25593"
+      - "https://github.com/advisories/GHSA-g55j-c2v4-pjcg"
+
+  # CVE-2026-28452/CNVD-2026-13543: Archive DoS (Zip/Tar Bomb)
+  - id: cve_2026_28452_archive_dos
+    type: archive_dos
+    severity: HIGH
+    cve: "CVE-2026-28452"
+    cnvd: "CNVD-2026-13543"
+    message: "Archive extraction denial of service (Zip/Tar Bomb) detected"
+    conditions:
+      - type: import
+        value: zipfile
+      - type: import
+        value: tarfile
+      - type: function
+        value: extract
+      - type: function
+        value: open
+      - type: pattern
+        value: \.zip|\.tar|\.gz|\.bz2|\.7z|\.rar
+    remediation: "Validate archive size and implement resource limits"
+    references:
+      - "https://nvd.nist.gov/vuln/detail/CVE-2026-28452"
+      - "https://github.com/openclaw/openclaw/security/advisories/GHSA-h89v-j3x9-8wqj"
+
+  # CVE-2026-27488: Cron webhook SSRF
+  - id: cve_2026_27488_cron_ssrf
+    type: cron_webhook_ssrf
+    severity: HIGH
+    cve: "CVE-2026-27488"
+    message: "Cron webhook delivery SSRF vulnerability detected"
+    conditions:
+      - type: pattern
+        value: cron|webhook|scheduled.*task
+      - type: function
+        value: fetch
+      - type: string
+        value: http
+      - type: pattern
+        value: callback|url|endpoint
+    remediation: "Use SSRF-safe fetch for all webhook deliveries"
+    references:
+      - "https://nvd.nist.gov/vuln/detail/CVE-2026-27488"
+      - "https://github.com/openclaw/openclaw/security/advisories/GHSA-w45g-5746-x9fp"
+
+  # GHSA-82g8-464f-2mv7: Skill env override host env injection
+  - id: ghsa_82g8_host_env_injection
+    type: host_env_injection
+    severity: HIGH
+    ghsa: "GHSA-82g8-464f-2mv7"
+    message: "Skill environment override host env injection detected"
+    conditions:
+      - type: pattern
+        value: applySkillConfigEnvOverrides|skill.*env|env.*override
+      - type: string
+        value: NODE_OPTIONS
+      - type: string
+        value: env
+      - type: pattern
+        value: skills\.entries|skill.*config
+    remediation: "Block dangerous host env keys like NODE_OPTIONS"
+    references:
+      - "https://github.com/openclaw/openclaw/security/advisories/GHSA-82g8-464f-2mv7"
+
+  # GHSA-w2cg-vxx6-5xjg: DoS via large base64 media files
+  - id: ghsa_w2cg_base64_dos
+    type: base64_dos
+    severity: MEDIUM
+    ghsa: "GHSA-w2cg-vxx6-5xjg"
+    message: "Denial of service through large base64 media files detected"
+    conditions:
+      - type: import
+        value: base64
+      - type: function
+        value: b64decode
+      - type: function
+        value: decode
+      - type: pattern
+        value: buffer|allocation|memory
+    remediation: "Validate buffer sizes before decoding base64"
+    references:
+      - "https://github.com/openclaw/openclaw/security/advisories/GHSA-w2cg-vxx6-5xjg"
+
+  # Zip Bomb detection
+  - id: zip_bomb
+    type: zip_bomb
+    severity: HIGH
+    message: "Potential zip bomb archive detected"
+    conditions:
+      - type: import
+        value: zipfile
+      - type: function
+        value: ZipInfo
+      - type: pattern
+        value: compression.*ratio|high.*compression|nested.*archive
+    remediation: "Check compression ratios and nested archive depth"
+
+  # Tar Bomb detection
+  - id: tar_bomb
+    type: tar_bomb
+    severity: HIGH
+    message: "Potential tar bomb archive detected"
+    conditions:
+      - type: import
+        value: tarfile
+      - type: function
+        value: extractfile
+      - type: pattern
+        value: \./|\.\.\
+    remediation: "Validate archive contents before extraction"
+
+  # Config manipulation via WebSocket API
+  - id: websocket_config_manipulation
+    type: websocket_config
+    severity: CRITICAL
+    message: "Config manipulation via WebSocket API detected"
+    conditions:
+      - type: import
+        value: websocket
+      - type: pattern
+        value: config\.apply|config\.set|update.*config
+      - type: function
+        value: send
+      - type: pattern
+        value: "\\{.*config|settings.*:|cliPath.*:"
+    remediation: "Restrict config modifications to authenticated admin only"
+
+  # Cron job security
+  - id: cron_job_security
+    type: cron_security
+    severity: MEDIUM
+    message: "Cron job execution without proper validation"
+    conditions:
+      - type: import
+        value: node-cron
+      - type: function
+        value: schedule
+      - type: pattern
+        value: cron|scheduled.*task
+    remediation: "Validate all cron job commands and schedules"
+
+  # Resource exhaustion attack
+  - id: resource_exhaustion
+    type: resource_exhaustion
+    severity: MEDIUM
+    message: "Resource exhaustion attack pattern detected"
+    conditions:
+      - type: pattern
+        value: while.*True|loop.*forever|infinite.*loop
+      - type: function
+        value: range
+      - type: function
+        value: iter
+    remediation: "Implement rate limiting and resource quotas"
+
+  # Extraction SSRF (via archive metadata)
+  - id: extraction_ssrf
+    type: extraction_ssrf
+    severity: HIGH
+    message: "SSRF via archive extraction detected"
+    conditions:
+      - type: import
+        value: tarfile
+      - type: import
+        value: zipfile
+      - type: function
+        value: extract
+      - type: pattern
+        value: symlink|link.*to|http://|https://
+    remediation: "Block archive extraction with external symlinks or URLs"
+
+  # CLI path injection via config
+  - id: cli_path_injection
+    type: cli_path_injection
+    severity: CRITICAL
+    message: "CLI path injection via config detected"
+    conditions:
+      - type: string
+        value: cliPath
+      - type: string
+        value: config
+      - type: pattern
+        value: \|.*\||&&|\`.*\|
+    remediation: "Validate all cliPath values, reject shell metacharacters"
+
+  # Host env key poisoning
+  - id: host_env_poisoning
+    type: host_env_poisoning
+    severity: HIGH
+    message: "Host environment key poisoning detected"
+    conditions:
+      - type: pattern
+        value: NODE_OPTIONS|NODE_ENV|RUSTFLAGS|PYTHONPATH
+      - type: function
+        value: environ
+      - type: function
+        value: putenv
+      - type: function
+        value: setenv
+    remediation: "Block modification of critical environment variables"
+
+  # ApplySkillConfigenvOverrides vulnerability
+  - id: apply_skill_config_injection
+    type: skill_config_injection
+    severity: HIGH
+    message: "Skill configuration environment injection detected"
+    conditions:
+      - type: pattern
+        value: applySkillConfigEnvOverrides|skill.*config.*env
+      - type: string
+        value: NODE_OPTIONS
+      - type: string
+        value: env
+    remediation: "Sanitize all skill environment overrides"

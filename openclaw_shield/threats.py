@@ -382,6 +382,42 @@ class ThreatDetector:
             'severity': 'MEDIUM',
             'description': 'HTTP parameter pollution',
             'remediation': 'Validate and deduplicate all parameters'
+        },
+        # Extended 2026 CVE categories (Round 4)
+        'cron_security': {
+            'severity': 'MEDIUM',
+            'description': 'Cron job execution without proper validation (CVE-2026-27488)',
+            'remediation': 'Validate all cron job commands and schedules'
+        },
+        'resource_exhaustion': {
+            'severity': 'MEDIUM',
+            'description': 'Resource exhaustion attack pattern (CVE-2026-28452)',
+            'remediation': 'Implement rate limiting and resource quotas'
+        },
+        'extraction_ssrf': {
+            'severity': 'HIGH',
+            'description': 'SSRF via archive extraction (CVE-2026-27488)',
+            'remediation': 'Block archive extraction with external symlinks or URLs'
+        },
+        'cli_path_injection': {
+            'severity': 'CRITICAL',
+            'description': 'CLI path injection via config (CVE-2026-25593)',
+            'remediation': 'Validate all cliPath values, reject shell metacharacters'
+        },
+        'host_env_poisoning': {
+            'severity': 'HIGH',
+            'description': 'Host environment key poisoning (GHSA-82g8-464f-2mv7)',
+            'remediation': 'Block modification of critical environment variables'
+        },
+        'skill_config_injection': {
+            'severity': 'HIGH',
+            'description': 'Skill configuration environment injection',
+            'remediation': 'Sanitize all skill environment overrides'
+        },
+        'websocket_config_manipulation': {
+            'severity': 'CRITICAL',
+            'description': 'Config manipulation via WebSocket API',
+            'remediation': 'Restrict config modifications to authenticated admin only'
         }
     }
 

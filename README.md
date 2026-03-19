@@ -5,7 +5,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![Security](https://img.shields.io/badge/security-hardened-green.svg)]()
-[![Version](https://img.shields.io/badge/version-1.1.0-cyan.svg)](https://github.com/wooluo/openclaw-security)
+[![Version](https://img.shields.io/badge/version-1.6.0-cyan.svg)](https://github.com/wooluo/openclaw-security)
 [![Code Style](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 **OpenClaw Security Shield** 是一个专为 OpenClaw 设计的企业级安全防护系统
@@ -430,9 +430,9 @@ skills:
 
 ## 🎯 威胁检测规则
 
-### 规则概览 (v1.5.0)
+### 规则概览 (v1.6.0)
 
-系统内置 **75 条** 检测规则，涵盖通用威胁、CVE 相关漏洞和知名攻击模式。
+系统内置 **89 条** 检测规则，涵盖通用威胁、CVE 相关漏洞和知名攻击模式。
 
 ### 基础规则 (rule_001 ~ rule_010)
 
@@ -449,7 +449,7 @@ skills:
 | rule_009 | data_exfiltration | MEDIUM | 数据外传 |
 | rule_010 | reverse_shell | CRITICAL | 反向 Shell |
 
-### CVE 相关规则 (23条)
+### CVE 相关规则 (26条)
 
 | 规则 ID | CVE | 类型 | 严重性 | 描述 |
 |---------|-----|------|--------|------|
@@ -475,20 +475,26 @@ skills:
 | cve_2026_26325_allowlist_bypass | CVE-2026-26325 | allowlist_bypass | 🟠 HIGH | 白名单绕过 |
 | cve_2026_26323_script_injection | CVE-2026-26323 | script_command_injection | 🟠 HIGH | 脚本命令注入 |
 | cve_2026_26320 | CVE-2026-26320 | input_sanitization | 🟠 HIGH | 输入清理漏洞 |
+| cve_2026_25593_config_rce | CVE-2026-25593 | cli_path_injection | 🔴 CRITICAL | Config RCE (CVSS 9.8) |
+| cve_2026_28452_archive_dos | CVE-2026-28452 | resource_exhaustion | 🟡 MEDIUM | Archive DoS 攻击 |
+| cve_2026_27488_cron_ssrf | CVE-2026-27488 | extraction_ssrf | 🟠 HIGH | Cron Webhook SSRF |
 
-### CNVD 规则 (1条)
+### CNVD 规则 (2条)
 
 | 规则 ID | CNVD | 类型 | 严重性 | 描述 |
 |---------|------|--------|--------|------|
 | cnvd_2026_13544_identity_forgery | CNVD-2026-13544 | identity_forgery | 🟠 HIGH | 身份伪造漏洞 |
+| cnvd_2026_13543 | CNVD-2026-13543 | dns_tunneling | 🟠 HIGH | DNS 隧道外传 |
 
-### GHSA 规则 (3条)
+### GHSA 规则 (5条)
 
 | 规则 ID | GHSA | 类型 | 严重性 | 描述 |
 |---------|------|--------|--------|------|
 | ghsa_56f2_image_ssrf | GHSA-56f2-hvwg-5743 | image_tool_ssrf | 🟠 HIGH | 图片工具 SSRF |
 | ghsa_pg2v_urbit_ssrf | GHSA-pg2v-8xwh-qhcc | urbit_auth_ssrf | 🟡 MEDIUM | Urbit 认证 SSRF |
 | ghsa_c37p_webhook_bypass | GHSA-c37p-4qqg-3p76 | webhook_auth_bypass | 🟡 MEDIUM | Webhook 认证绕过 |
+| ghsa_82g8_host_env | GHSA-82g8-464f-2mv7 | host_env_poisoning | 🟠 HIGH | Host 环境变量注入 |
+| ghsa_w2cg_base64_dos | GHSA-w2cg-vxx6-5xjg | resource_exhaustion | 🟠 HIGH | Base64 DoS 攻击 |
 
 ### 知名攻击模式 (2条)
 

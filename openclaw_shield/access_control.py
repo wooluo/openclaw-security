@@ -92,18 +92,19 @@ class Capability:
     CAP_KILL = "CAP_KILL"
     CAP_CHOWN = "CAP_CHOWN"
 
-    # Capability sets for different profiles
-    PROFILE_CAPABILITIES = {
-        'minimal': [],
-        'basic': [Capability.CAP_FOWNER, Capability.CAP_FSETID],
-        'network': [Capability.CAP_NET_RAW],
-        'admin': [
-            Capability.CAP_NET_ADMIN,
-            Capability.CAP_SYS_ADMIN,
-            Capability.CAP_SYS_PTRACE,
-            Capability.CAP_DAC_OVERRIDE,
-        ],
-    }
+
+# Capability sets for different profiles (defined outside class to avoid reference issues)
+PROFILE_CAPABILITIES = {
+    'minimal': [],
+    'basic': [Capability.CAP_FOWNER, Capability.CAP_FSETID],
+    'network': [Capability.CAP_NET_RAW],
+    'admin': [
+        Capability.CAP_NET_ADMIN,
+        Capability.CAP_SYS_ADMIN,
+        Capability.CAP_SYS_PTRACE,
+        Capability.CAP_DAC_OVERRIDE,
+    ],
+}
 
 
 class ProcessAccessControl:
