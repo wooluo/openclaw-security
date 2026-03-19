@@ -1017,3 +1017,185 @@ rules:
       - type: pattern
         value: base64|encode
     remediation: "Monitor DNS traffic for suspicious patterns"
+
+  # ========================================
+  # Additional 2026 CVE-Based Rules (Round 3)
+  # ========================================
+
+  # CVE-2026-28466: Gateway node.invoke approval bypass
+  - id: cve_2026_28466_approval_bypass
+    type: approval_bypass
+    severity: CRITICAL
+    cve: "CVE-2026-28466"
+    cvss: 9.4
+    message: "Gateway node.invoke approval bypass detected (CVSS 9.4)"
+    conditions:
+      - type: pattern
+        value: node\.invoke|gateway\.invoke
+      - type: pattern
+        value: approved|approval|bypass.*check
+      - type: string
+        value: params
+      - type: pattern
+        value: system\.run|exec|command
+    remediation: "Always validate approval fields from user params"
+    references:
+      - "https://nvd.nist.gov/vuln/detail/CVE-2026-28466"
+      - "https://github.com/advisories/GHSA-gv46-4xfq-jv58"
+
+  # CVE-2026-27486: Process ownership verification bypass
+  - id: cve_2026_27486_process_cleanup
+    type: process_ownership_bypass
+    severity: MEDIUM
+    cve: "CVE-2026-27486"
+    message: "Process cleanup without ownership verification detected"
+    conditions:
+      - type: import
+        value: psutil
+      - type: import
+        value: subprocess
+      - type: function
+        value: kill
+      - type: function
+        value: terminate
+      - type: pattern
+        value: pattern.*match|cmdline.*match
+    remediation: "Always verify process ownership before termination"
+    references:
+      - "https://nvd.nist.gov/vuln/detail/CVE-2026-27486"
+
+  # CVE-2026-32063: Systemd unit file generation command injection
+  - id: cve_2026_32063_systemd_injection
+    type: systemd_injection
+    severity: HIGH
+    cve: "CVE-2026-32063"
+    message: "Systemd unit file generation command injection detected"
+    conditions:
+      - type: pattern
+        value: systemd|\.service|\.timer|\.path
+      - type: string
+        value: Environment=
+      - type: pattern
+        value: \\n|\\r|\\\\n|\\\\r
+      - type: function
+        value: write
+    remediation: "Sanitize all values before writing systemd unit files"
+    references:
+      - "https://nvd.nist.gov/vuln/detail/CVE-2026-32063"
+      - "https://github.com/advisories/GHSA-vffc-f7r7-rx2w"
+
+  # CVE-2026-26325: rawCommand/command[] mismatch access control bypass
+  - id: cve_2026_26325_allowlist_bypass
+    type: allowlist_bypass
+    severity: HIGH
+    cve: "CVE-2026-26325"
+    message: "system.run rawCommand/command[] mismatch detected"
+    conditions:
+      - type: pattern
+        value: system\.run|rawCommand|allowlist
+      - type: function
+        value: exec
+      - type: pattern
+        value: command\[\]|rawCommand
+    remediation: "Enforce consistency between rawCommand and command[]"
+    references:
+      - "https://nvd.nist.gov/vuln/detail/CVE-2026-26325"
+
+  # CVE-2026-26323: clawtributors update script command injection
+  - id: cve_2026_26323_script_injection
+    type: script_command_injection
+    severity: HIGH
+    cve: "CVE-2026-26323"
+    message: "clawtributors update script command injection detected"
+    conditions:
+      - type: pattern
+        value: update-clawtributors|git.*log|execSync
+      - type: import
+        value: child_process
+      - type: function
+        value: exec
+      - type: function
+        value: spawn
+    remediation: "Never pass git log output directly to shell commands"
+    references:
+      - "https://nvd.nist.gov/vuln/detail/CVE-2026-26323"
+
+  # CVE-2026-26320: Additional vulnerability (needs verification)
+  - id: cve_2026_26320
+    type: input_sanitization
+    severity: HIGH
+    cve: "CVE-2026-26320"
+    message: "Input sanitization vulnerability detected"
+    conditions:
+      - type: pattern
+        value: user.*input|external.*input
+      - type: function
+        value: eval
+      - type: function
+        value: exec
+    remediation: "Always sanitize and validate user input"
+
+  # CNVD-2026-13544: Identity forgery vulnerability
+  - id: cnvd_2026_13544_identity_forgery
+    type: identity_forgery
+    severity: HIGH
+    cnvd: "CNVD-2026-13544"
+    message: "OpenClaw identity forgery vulnerability detected"
+    conditions:
+      - type: pattern
+        value: username|user.*name|identity|impersonate
+      - type: string
+        value: telegram
+      - type: string
+        value: bot
+      - type: pattern
+        value: recycle|reuse|spoof
+    remediation: "Validate user identity, prevent username recycling"
+    references:
+      - "https://www.cnvd.org.cn/flaw/show/CNVD-2026-13544"
+
+  # Request-Side Forgery (general pattern)
+  - id: request_side_forgery
+    type: request_side_forgery
+    severity: HIGH
+    message: "Potential Request-Side Forgery detected"
+    conditions:
+      - type: import
+        value: requests
+      - type: function
+        value: post
+      - type: pattern
+        value: callback|redirect|return.*url
+      - type: string
+        value: params
+    remediation: "Validate all callback URLs and redirect destinations"
+
+  # Stored XSS pattern
+  - id: stored_xss
+    type: stored_xss
+    severity: MEDIUM
+    message: "Stored XSS vulnerability pattern detected"
+    conditions:
+      - type: pattern
+        value: <script|javascript:|onerror=|onload=
+      - type: function
+        value: render
+      - type: string
+        value: user
+    remediation: "Escape all user-generated content before rendering"
+
+  # Parameter pollution attack
+  - id: parameter_pollution
+    type: parameter_pollution
+    severity: MEDIUM
+    message: "Parameter pollution attack pattern detected"
+    conditions:
+      - type: pattern
+        value: \&.*\=.*\&.*\=|\?.*\=.*\&.*\=
+      - type: function
+        value: request
+      - type: string
+        value: params
+      - type: string
+        value: query
+    remediation: "Validate and deduplicate all parameters"

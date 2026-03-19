@@ -336,6 +336,52 @@ class ThreatDetector:
             'severity': 'HIGH',
             'description': 'DNS tunneling exfiltration',
             'remediation': 'Monitor DNS for suspicious patterns'
+        },
+        # Extended 2026 CVE categories (Round 3)
+        'approval_bypass': {
+            'severity': 'CRITICAL',
+            'description': 'Approval bypass via params injection (CVE-2026-28466)',
+            'remediation': 'Always validate approval fields from user params'
+        },
+        'process_ownership_bypass': {
+            'severity': 'MEDIUM',
+            'description': 'Process cleanup without ownership (CVE-2026-27486)',
+            'remediation': 'Always verify process ownership before termination'
+        },
+        'systemd_injection': {
+            'severity': 'HIGH',
+            'description': 'Systemd unit file command injection (CVE-2026-32063)',
+            'remediation': 'Sanitize all values before writing systemd files'
+        },
+        'allowlist_bypass': {
+            'severity': 'HIGH',
+            'description': 'Allowlist bypass (CVE-2026-26325)',
+            'remediation': 'Enforce consistency between command types'
+        },
+        'script_command_injection': {
+            'severity': 'HIGH',
+            'description': 'Script command injection (CVE-2026-26323)',
+            'remediation': 'Never pass git output directly to shell'
+        },
+        'identity_forgery': {
+            'severity': 'HIGH',
+            'description': 'Identity forgery (CNVD-2026-13544)',
+            'remediation': 'Validate user identity, prevent recycling'
+        },
+        'request_side_forgery': {
+            'severity': 'HIGH',
+            'description': 'Request-Side Forgery',
+            'remediation': 'Validate all callbacks and redirects'
+        },
+        'stored_xss': {
+            'severity': 'MEDIUM',
+            'description': 'Stored Cross-Site Scripting',
+            'remediation': 'Escape all user-generated content'
+        },
+        'parameter_pollution': {
+            'severity': 'MEDIUM',
+            'description': 'HTTP parameter pollution',
+            'remediation': 'Validate and deduplicate all parameters'
         }
     }
 
@@ -503,6 +549,14 @@ class ThreatDetector:
                     # Add GHSA reference if present
                     if 'ghsa' in rule:
                         threat['ghsa'] = rule['ghsa']
+
+                    # Add CNVD reference if present
+                    if 'cnvd' in rule:
+                        threat['cnvd'] = rule['cnvd']
+
+                    # Add CVSS score if present
+                    if 'cvss' in rule:
+                        threat['cvss'] = rule['cvss']
 
                     # Add attack name if present
                     if 'attack_name' in rule:
