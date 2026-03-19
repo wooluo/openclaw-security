@@ -658,9 +658,8 @@ in the Software without restriction...
 
 ## 📮 联系方式
 
-- 📧 邮箱: security@openclaw.ai
 - 🐛 问题反馈: [GitHub Issues](https://github.com/wooluo/openclaw-security/issues)
-- 🔐 安全漏洞: 请通过私有渠道报告
+- 🔐 安全漏洞: wooluo@gmail.com
 
 ---
 
