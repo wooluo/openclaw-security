@@ -430,9 +430,9 @@ skills:
 
 ## 🎯 威胁检测规则
 
-### 规则概览 (v1.3.0)
+### 规则概览 (v1.4.0)
 
-系统内置 **40 条** 检测规则，涵盖通用威胁、CVE 相关漏洞和知名攻击模式。
+系统内置 **65 条** 检测规则，涵盖通用威胁、CVE 相关漏洞和知名攻击模式。
 
 ### 基础规则 (rule_001 ~ rule_010)
 
@@ -449,7 +449,7 @@ skills:
 | rule_009 | data_exfiltration | MEDIUM | 数据外传 |
 | rule_010 | reverse_shell | CRITICAL | 反向 Shell |
 
-### CVE 相关规则 (8条)
+### CVE 相关规则 (17条)
 
 | 规则 ID | CVE | 类型 | 严重性 | 描述 |
 |---------|-----|------|--------|------|
@@ -460,7 +460,15 @@ skills:
 | cve_2026_26319_webhook | CVE-2026-26319 | missing_auth | 🟠 HIGH | Webhook 认证缺失 |
 | cve_2026_26329_upload | CVE-2026-26329 | file_upload_traversal | 🟠 HIGH | 文件上传路径遍历 |
 | cve_2026_29610_path_hijack | CVE-2026-29610 | path_hijacking | 🔴 CRITICAL | PATH 劫持命令执行 |
-| clawjacked_ws_brute | CVE-2026-25253 | websocket_brute_force | 🔴 CRITICAL | ClawJacked 暴力破解 |
+| cve_2026_28472_device_bypass | CVE-2026-28472 | device_confirmation_bypass | 🔴 CRITICAL | 设备确认绕过 |
+| cve_2026_4039_config_override | CVE-2026-4039 | config_override | 🟠 HIGH | 配置环境变量覆盖 |
+| cve_2026_28453_zip_slip | CVE-2026-28453 | zip_slip | 🟠 HIGH | Zip Slip 路径遍历 |
+| cve_2026_27001_workspace_leak | CVE-2026-27001 | workspace_path_leak | 🟡 MEDIUM | 工作区路径泄露 |
+| cve_2026_28363_bypass | CVE-2026-28363 | security_bypass | 🟠 HIGH | 安全绕过 |
+| cve_2026_26327 | CVE-2026-26327 | input_validation_bypass | 🟠 HIGH | 输入验证绕过 |
+| cve_2026_22817_jwt | CVE-2026-22817 | jwt_algorithm_confusion | 🟠 HIGH | JWT 算法混淆 |
+| cve_2026_22818_jwks | CVE-2026-22818 | jwks_missing_alg | 🟠 HIGH | JWKS 缺失算法 |
+| cve_2026_28393_hook_path | CVE-2026-28393 | hook_path_traversal | 🟠 HIGH | Hook 路径遍历 |
 
 ### GHSA 规则 (3条)
 
@@ -475,6 +483,48 @@ skills:
 | 规则 ID | 攻击名称 | 类型 | 严重性 | 描述 |
 |---------|----------|--------|--------|------|
 | clawjacked_ws_brute | ClawJacked | websocket_brute_force | 🔴 CRITICAL | WebSocket 暴力破解 |
+| clawjacked_auto_approve | ClawJacked | auto_device_approval | 🟠 HIGH | 自动设备批准漏洞 |
+
+### 攻击模式检测规则
+
+| 规则 ID | 类型 | 严重性 | 描述 |
+|---------|------|--------|------|
+| clawhavoc_typosquatting | typosquatting | 🟠 HIGH | 包名仿冒攻击 |
+| clawhavoc_malicious_skill | supply_chain_attack | 🔴 CRITICAL | ClawHavoc 供应链攻击 |
+| clawdrain_trojan | trojan_skill | 🔴 CRITICAL | Clawdrain 木马技能 |
+| cve_path_traversal | path_traversal | 🟠 HIGH | 路径遍历 |
+| cve_lfi | local_file_inclusion | 🟠 HIGH | 本地文件包含 |
+| cve_env_injection | env_injection | 🟠 HIGH | 环境变量注入 |
+| cve_dns_exfiltration | dns_exfiltration | 🟠 HIGH | DNS 数据外渗 |
+| cve_cryptomining | cryptomining | 🔴 CRITICAL | 加密货币挖矿 |
+| cve_botnet_c2 | botnet_c2 | 🔴 CRITICAL | 僵尸网络 C2 |
+| cve_container_escape | container_escape | 🔴 CRITICAL | 容器逃逸 |
+| cve_privilege_escalation | privilege_escalation | 🟠 HIGH | 权限提升 |
+| cve_prompt_injection | prompt_injection | 🟠 HIGH | LLM 提示注入 |
+| cve_api_key_harvesting | api_key_harvesting | 🔴 CRITICAL | API 密钥窃取 |
+| log_poisoning | log_poisoning | 🟠 HIGH | 日志投毒攻击 |
+| indirect_prompt_injection | indirect_prompt_injection | 🟠 HIGH | 间接提示注入 |
+| infostealer_pattern | infostealer | 🔴 CRITICAL | 窃密木马检测 |
+| shadow_ai_operations | shadow_ai | 🟡 MEDIUM | 影子 AI 操作 |
+| llm_tool_injection | tool_injection | 🟠 HIGH | LLM 工具注入 |
+| nostr_config_tampering | unauthenticated_config | 🔴 CRITICAL | Nostr 配置篡改 |
+| frontmatter_traversal | frontmatter_traversal | 🟠 HIGH | Frontmatter 遍历 |
+| prompt_replay_attack | prompt_replay | 🟠 HIGH | 提示注入重放 |
+| mdns_disclosure | mdns_info_disclosure | 🟡 MEDIUM | mDNS 信息泄露 |
+| memory_poisoning | memory_poisoning | 🟠 HIGH | 内存投毒 (SOUL.md/MEMORY.md) |
+| atomic_stealer_amos | atomic_stealer | 🔴 CRITICAL | Atomic Stealer 恶意软件 |
+| delayed_activation | delayed_payload | 🟠 HIGH | 延迟激活载荷 |
+| cloud_metadata_ssrf | cloud_metadata_ssrf | 🔴 CRITICAL | 云元数据 SSRF |
+| localhost_trust_bypass | localhost_trust_bypass | 🟠 HIGH | 本地信任绕过 |
+| shell_env_hijack | shell_hijacking | 🔴 CRITICAL | SHELL 环境变量劫持 |
+| macos_persistence_launchagent | macos_persistence | 🔴 CRITICAL | macOS 持久化 |
+| shell_profile_persistence | shell_profile_persistence | 🟠 HIGH | Shell 配置持久化 |
+| hidden_css_injection | hidden_css_injection | 🟠 HIGH | 隐藏 CSS 提示注入 |
+| runaway_api_cost | runaway_api_cost | 🟡 MEDIUM | API 成本失控 |
+| oauth_overreach | oauth_overreach | 🟠 HIGH | OAuth 权限过度 |
+| dns_tunneling | dns_tunneling | 🟠 HIGH | DNS 隧道外渗 |
+
+---
 | clawjacked_auto_approve | ClawJacked | auto_device_approval | 🟠 HIGH | 自动设备批准漏洞 |
 
 ### 攻击模式检测规则
