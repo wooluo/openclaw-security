@@ -129,6 +129,7 @@ class SkillScanner:
             'info': [],
             'imports': [],
             'functions': [],
+            'strings': [],  # String literals for pattern matching
             'passed': True,
             'score': 100
         }
@@ -210,6 +211,15 @@ class SkillScanner:
                         'message': f"Access to environment variables detected: {node.attr}",
                         'line': getattr(node, 'lineno', 0)
                     })
+
+            # Collect string literals for pattern matching
+            elif isinstance(node, ast.Str):  # Python < 3.8
+                if len(node.s) > 3:  # Only collect meaningful strings
+                    results['strings'].append(node.s)
+
+            elif isinstance(node, ast.Constant):  # Python 3.8+
+                if isinstance(node.value, str) and len(node.value) > 3:
+                    results['strings'].append(node.value)
 
     def _analyze_javascript(self, content: str, results: Dict):
         """Analyze JavaScript code for threats."""

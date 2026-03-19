@@ -1,5 +1,6 @@
 # OpenClaw Security Shield - Custom Threat Detection Rules
-# Version: 1.0.0
+# Version: 1.2.0
+# Based on publicly disclosed OpenClaw CVEs and security research
 
 rules:
   # Rule 1: Detect suspicious subprocess usage
@@ -104,7 +105,7 @@ rules:
   - id: rule_009
     type: data_exfiltration
     severity: MEDIUM
-    message: "External HTTP request detected
+    message: "External HTTP request detected"
     conditions:
       - type: import
         value: requests
@@ -123,3 +124,279 @@ rules:
       - type: function
         value: connect
     remediation: "Remove reverse shell code immediately"
+
+  # ========================================
+  # CVE-Based Detection Rules
+  # Based on publicly disclosed vulnerabilities
+  # ========================================
+
+  # CVE-2026-25253: WebSocket Hijacking & Token Theft
+  - id: cve_2026_25253_websocket
+    type: websocket_hijacking
+    severity: CRITICAL
+    cve: "CVE-2026-25253"
+    message: "Potential WebSocket hijacking - gatewayUrl from query string"
+    conditions:
+      - type: pattern
+        value: gatewayUrl
+      - type: string
+        value: query
+      - type: import
+        value: websocket
+    remediation: "Validate gatewayUrl from whitelist only, never from user input"
+    references:
+      - "https://nvd.nist.gov/vuln/detail/CVE-2026-25253"
+      - "https://www.runzero.com/blog/openclaw/"
+
+  # CVE-2026-25253: Token Theft via URL Parameters
+  - id: cve_2026_25253_token
+    type: token_theft
+    severity: CRITICAL
+    cve: "CVE-2026-25253"
+    message: "Authentication token exposure via URL parameters"
+    conditions:
+      - type: pattern
+        value: token.*=|auth.*=|key.*=
+      - type: string
+        value: window.location
+      - type: string
+        value: document.location
+    remediation: "Never pass tokens in URL, use Authorization header instead"
+
+  # CVE-2026-26322: Server-Side Request Forgery (SSRF)
+  - id: cve_2026_26322_ssrf
+    type: ssrf_attack
+    severity: HIGH
+    cve: "CVE-2026-26322"
+    message: "Potential SSRF - user-controlled URL in request"
+    conditions:
+      - type: import
+        value: requests
+      - type: function
+        value: get
+      - type: function
+        value: post
+      - type: pattern
+        value: url.*=|endpoint.*=|target.*=
+    remediation: "Validate and whitelist all target URLs"
+    references:
+      - "https://nvd.nist.gov/vuln/detail/CVE-2026-26322"
+
+  # CVE-2026-24763: Command Injection via PATH
+  - id: cve_2026_24763_path_injection
+    type: command_injection
+    severity: CRITICAL
+    cve: "CVE-2026-24763"
+    message: "PATH environment manipulation detected - command injection risk"
+    conditions:
+      - type: import
+        value: os
+      - type: function
+        value: environ
+      - type: string
+        value: PATH
+      - type: function
+        value: system
+      - type: function
+        value: popen
+    remediation: "Never modify PATH based on user input, use absolute paths"
+    references:
+      - "https://nvd.nist.gov/vuln/detail/CVE-2026-24763"
+
+  # ClawHavoc: Supply Chain Attack Patterns
+  - id: clawhavoc_typosquatting
+    type: typosquatting
+    severity: HIGH
+    message: "Potential typosquatting - suspicious package name"
+    conditions:
+      - type: pattern
+        value: opencslaw|openclaw|openclw|opencraw|open-claw
+      - type: import
+        value: pip install
+    remediation: "Verify exact package name from official source only"
+
+  # ClawHavoc: Malicious Skill Indicators
+  - id: clawhavoc_malicious_skill
+    type: supply_chain_attack
+    severity: CRITICAL
+    message: "ClawHavoc-style malicious skill pattern detected"
+    conditions:
+      - type: pattern
+        value: __import__.*base64|exec.*decode|compile.*decode
+      - type: string
+        value: ClawHub
+      - type: string
+        value: marketplace
+    remediation: "Only install skills from verified publishers"
+    references:
+      - "https://www.antiy.com/response/OpenClaw_AI_Poisoning_Attack_Analysis.html"
+
+  # Clawdrain: Trojanized Skill Pattern
+  - id: clawdrain_trojan
+    type: trojan_skill
+    severity: CRITICAL
+    message: "Clawdrain-style trojan skill pattern"
+    conditions:
+      - type: function
+        value: __import__
+      - type: function
+        value: getattr
+      - type: string
+        value: __globals__
+      - type: pattern
+        value: \. __builtins__|\. __import__
+    remediation: "Skill attempts to access Python internals - potential trojan"
+
+  # CVE: Path Traversal Attacks
+  - id: cve_path_traversal
+    type: path_traversal
+    severity: HIGH
+    message: "Path traversal pattern detected"
+    conditions:
+      - type: pattern
+        value: \.\./|\.\.\\|%2e%2e|%252e
+      - type: function
+        value: open
+      - type: function
+        value: Path
+    remediation: "Validate and sanitize all file paths"
+
+  # CVE: Local File Inclusion (LFI)
+  - id: cve_lfi
+    type: local_file_inclusion
+    severity: HIGH
+    message: "Local file inclusion pattern detected"
+    conditions:
+      - type: string
+        value: /etc/passwd
+      - type: string
+        value: /etc/shadow
+      - type: string
+        value: ~/.ssh/
+      - type: string
+        value: C:\\Users\\
+      - type: string
+        value: C:\\Windows\\
+    remediation: "Block access to sensitive system files"
+
+  # CVE: Environment Variable Injection
+  - id: cve_env_injection
+    type: env_injection
+    severity: HIGH
+    message: "Environment variable injection detected"
+    conditions:
+      - type: import
+        value: os
+      - type: function
+        value: putenv
+      - type: function
+        value: setenv
+      - type: pattern
+        value: PYTHONPATH|LD_PRELOAD|DYLD_INSERT_LIBRARIES
+    remediation: "Never allow user input to modify environment variables"
+
+  # CVE: DNS Exfiltration
+  - id: cve_dns_exfiltration
+    type: dns_exfiltration
+    severity: HIGH
+    message: "Potential DNS data exfiltration"
+    conditions:
+      - type: import
+        value: socket
+      - type: function
+        value: gethostbyname
+      - type: pattern
+        value: "[a-z0-9]{32,}\\..*\\.|.*\\.[a-z0-9]{20,}\\..*"
+      - type: string
+        value: dns
+    remediation: "Monitor DNS queries for suspicious patterns"
+
+  # CVE: Cryptomining Detection
+  - id: cve_cryptomining
+    type: cryptomining
+    severity: CRITICAL
+    message: "Potential cryptomining code detected"
+    conditions:
+      - type: pattern
+        value: stratum|mining|crypto|miner|monero|bitcoin|xmr
+      - type: import
+        value: requests
+      - type: function
+        value: connect
+    remediation: "Remove cryptomining code immediately"
+
+  # CVE: Botnet C2 Communication
+  - id: cve_botnet_c2
+    type: botnet_c2
+    severity: CRITICAL
+    message: "Potential botnet C2 communication pattern"
+    conditions:
+      - type: pattern
+        value: beacon|heartbeat|c2_server|command.*control
+      - type: function
+        value: requests.post
+      - type: function
+        value: while.*True
+    remediation: "Skill may be part of a botnet"
+
+  # CVE: Container Escape
+  - id: cve_container_escape
+    type: container_escape
+    severity: CRITICAL
+    message: "Container escape pattern detected"
+    conditions:
+      - type: string
+        value: /proc/
+      - type: string
+        value: /sys/
+      - type: string
+        value: /host/
+      - type: string
+        value: docker.sock
+    remediation: "Block access to container runtime sockets"
+
+  # CVE: Privilege Escalation
+  - id: cve_privilege_escalation
+    type: privilege_escalation
+    severity: HIGH
+    message: "Privilege escalation pattern detected"
+    conditions:
+      - type: function
+        value: os.setuid
+      - type: function
+        value: os.setgid
+      - type: string
+        value: sudo
+      - type: string
+        value: root
+    remediation: "Skills should never attempt privilege escalation"
+
+  # CVE: LLM Prompt Injection
+  - id: cve_prompt_injection
+    type: prompt_injection
+    severity: HIGH
+    message: "Potential LLM prompt injection vector"
+    conditions:
+      - type: pattern
+        value: ignore.*previous|override.*instructions|jailbreak|dan.*mode
+      - type: string
+        value: system_prompt
+      - type: string
+        value: user_input
+    remediation: "Sanitize and validate all user prompts"
+
+  # CVE: API Key Harvesting
+  - id: cve_api_key_harvesting
+    type: api_key_harvesting
+    severity: CRITICAL
+    message: "API key harvesting pattern detected"
+    conditions:
+      - type: pattern
+        value: api[_-]?key|apikey|secret[_-]?key|access[_-]?token
+      - type: function
+        value: environ
+      - type: function
+        value: getenv
+      - type: string
+        value: http.*exfiltrate|requests\.post|urllib\.request
+    remediation: "Block unauthorized API key access"

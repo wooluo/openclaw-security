@@ -59,6 +59,11 @@ class ThreatDetector:
             'description': 'Server-Side Request Forgery risk',
             'remediation': 'Validate and restrict URL inputs'
         },
+        'ssrf_attack': {
+            'severity': 'HIGH',
+            'description': 'Server-Side Request Forgery (CVE-2026-26322)',
+            'remediation': 'Validate and whitelist all target URLs'
+        },
         'path_traversal': {
             'severity': 'MEDIUM',
             'description': 'Path traversal vulnerability',
@@ -68,6 +73,77 @@ class ThreatDetector:
             'severity': 'MEDIUM',
             'description': 'Code obfuscation detected',
             'remediation': 'Remove obfuscated code'
+        },
+        # CVE-based categories
+        'websocket_hijacking': {
+            'severity': 'CRITICAL',
+            'description': 'WebSocket hijacking (CVE-2026-25253)',
+            'remediation': 'Validate gatewayUrl from whitelist only'
+        },
+        'token_theft': {
+            'severity': 'CRITICAL',
+            'description': 'Authentication token theft (CVE-2026-25253)',
+            'remediation': 'Use Authorization header instead of URL parameters'
+        },
+        'command_injection': {
+            'severity': 'CRITICAL',
+            'description': 'Command injection (CVE-2026-24763)',
+            'remediation': 'Never use user input in shell commands'
+        },
+        'typosquatting': {
+            'severity': 'HIGH',
+            'description': 'Typosquatting package attack',
+            'remediation': 'Verify exact package name from official source'
+        },
+        'supply_chain_attack': {
+            'severity': 'CRITICAL',
+            'description': 'Supply chain attack (ClawHavoc)',
+            'remediation': 'Only install from verified publishers'
+        },
+        'trojan_skill': {
+            'severity': 'CRITICAL',
+            'description': 'Trojanized skill (Clawdrain)',
+            'remediation': 'Remove skill accessing Python internals'
+        },
+        'local_file_inclusion': {
+            'severity': 'HIGH',
+            'description': 'Local file inclusion attempt',
+            'remediation': 'Block access to sensitive system files'
+        },
+        'env_injection': {
+            'severity': 'HIGH',
+            'description': 'Environment variable injection',
+            'remediation': 'Never allow user input to modify environment'
+        },
+        'dns_exfiltration': {
+            'severity': 'HIGH',
+            'description': 'DNS data exfiltration',
+            'remediation': 'Monitor DNS queries for suspicious patterns'
+        },
+        'cryptomining': {
+            'severity': 'CRITICAL',
+            'description': 'Cryptocurrency mining',
+            'remediation': 'Remove cryptomining code immediately'
+        },
+        'botnet_c2': {
+            'severity': 'CRITICAL',
+            'description': 'Botnet command and control',
+            'remediation': 'Skill may be part of a botnet'
+        },
+        'container_escape': {
+            'severity': 'CRITICAL',
+            'description': 'Container escape attempt',
+            'remediation': 'Block access to container runtime sockets'
+        },
+        'prompt_injection': {
+            'severity': 'HIGH',
+            'description': 'LLM prompt injection',
+            'remediation': 'Sanitize and validate all user prompts'
+        },
+        'api_key_harvesting': {
+            'severity': 'CRITICAL',
+            'description': 'API key harvesting',
+            'remediation': 'Block unauthorized API key access'
         }
     }
 
@@ -219,13 +295,24 @@ class ThreatDetector:
         for rule in self.custom_rules:
             try:
                 if self._matches_rule(rule, static_results):
-                    threats.append({
+                    threat = {
                         'type': rule.get('type', 'custom'),
                         'severity': rule.get('severity', 'MEDIUM'),
                         'message': rule.get('message', 'Custom rule matched'),
                         'rule_id': rule.get('id'),
-                        'confidence': 0.9
-                    })
+                        'confidence': 0.9,
+                        'remediation': rule.get('remediation', 'Review this threat')
+                    }
+
+                    # Add CVE reference if present
+                    if 'cve' in rule:
+                        threat['cve'] = rule['cve']
+
+                    # Add reference links if present
+                    if 'references' in rule:
+                        threat['references'] = rule['references']
+
+                    threats.append(threat)
             except Exception as e:
                 logger.error(f"Error applying rule {rule.get('id')}: {e}")
 
@@ -251,10 +338,30 @@ class ThreatDetector:
             elif condition_type == 'pattern':
                 pattern = condition.get('value')
                 # Check in threats for pattern matches
+                matched = False
                 for threat in static_results.get('threats', []):
                     if threat.get('type') == pattern:
+                        matched = True
                         break
-                else:
+                # Also check in strings if available
+                if not matched:
+                    strings = static_results.get('strings', [])
+                    try:
+                        import re
+                        for s in strings:
+                            if re.search(pattern, s, re.IGNORECASE):
+                                matched = True
+                                break
+                    except re.error:
+                        pass
+                if not matched:
+                    return False
+
+            elif condition_type == 'string':
+                # Check for specific string literals in code
+                required_string = condition.get('value')
+                strings = static_results.get('strings', [])
+                if required_string not in strings:
                     return False
 
         return True
